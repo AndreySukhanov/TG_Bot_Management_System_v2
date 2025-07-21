@@ -290,11 +290,11 @@ def setup_menu_handlers(dp: Dispatcher):
         return Config.is_authorized(callback.from_user.id)
     
     # Команда меню
-    dp.message.register(
-        lambda msg: show_main_menu(msg, Config.get_user_role(msg.from_user.id)),
-        Command("menu"),
-        is_authorized
-    )
+    # dp.message.register(
+    #     lambda msg: show_main_menu(msg, Config.get_user_role(msg.from_user.id)),
+    #     Command("menu"),
+    #     is_authorized
+    # )  # Убрано
     
     # Обработчик кнопок меню отключен (reply кнопки убраны)
     # dp.message.register(

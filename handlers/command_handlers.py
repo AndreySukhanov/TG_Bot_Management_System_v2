@@ -256,7 +256,7 @@ def setup_command_handlers(dp: Dispatcher):
         return Config.get_user_role(message.from_user.id) == "manager"
     
     # Общие команды
-    dp.message.register(menu_command, Command("menu"), is_authorized)
+    # dp.message.register(menu_command, Command("menu"), is_authorized)  # Убрано
     
     # Команды для маркетологов
     dp.message.register(examples_command, Command("examples"), is_marketer)
