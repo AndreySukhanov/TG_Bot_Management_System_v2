@@ -488,7 +488,7 @@ async def ai_assistant_handler(message: Message):
         return
     
     # Извлекаем вопрос после команды
-    query = message.text.replace('/ai', '').strip()
+    query = (message.text or "").replace('/ai', '').strip()
     
     if not query:
         await message.answer(
