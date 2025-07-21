@@ -28,9 +28,11 @@ class UniversalAIParser:
 1. "balance_add" - пополнение баланса
 2. "balance_reset" - обнуление баланса  
 3. "payment_request" - заявка на оплату
-4. "analytics_query" - аналитический запрос
-5. "system_command" - системная команда
-6. "unknown" - неопределенное сообщение
+4. "payment_confirm" - подтверждение оплаты
+5. "analytics_query" - аналитический запрос (простые запросы баланса/статистики)
+6. "ai_analytics" - сложный аналитический запрос для AI-помощника
+7. "system_command" - системная команда
+8. "unknown" - неопределенное сообщение
 
 ПРАВИЛА АНАЛИЗА:
 
@@ -49,10 +51,30 @@ class UniversalAIParser:
 - Содержит сумму и платформу/сервис
 - Может содержать проект и способ оплаты
 
+ПОДТВЕРЖДЕНИЕ ОПЛАТЫ (payment_confirm):
+- Ключевые слова: оплачено, подтверждаю, выполнено, paid, confirmed
+- Обязательно содержит ID заявки (число)
+- Может содержать хэш транзакции, номер чека
+
 АНАЛИТИЧЕСКИЙ ЗАПРОС (analytics_query):
-- Вопросительные слова: сколько, какой, что, как, где, когда
-- Запросы информации о балансе, статистике, командах
-- Заканчивается на "?"
+- Только прямые команды статистики без подробной аналитики
+- НЕ используется для конкретных вопросов с данными
+
+СЛОЖНЫЙ АНАЛИТИЧЕСКИЙ ЗАПРОС (ai_analytics):
+- Вопросительные слова: сколько, какой, что, как, где, когда, покажи
+- Запросы с глубокой аналитикой: количество людей в команде, платежи за период, история баланса
+- Сложные вопросы требующие AI-анализа данных  
+- ВСЕ запросы баланса, операций, платежей, команды должны быть ai_analytics
+- Ключевые слова: анализ, сколько человек, какие платежи, за неделю, за месяц, тенденции, статистика по проектам, покажи, последние операции, история баланса, ожидающие оплаты, платформы, баланс, операции
+- Детальные запросы по данным дашборда
+
+СИСТЕМНАЯ КОМАНДА (system_command):
+- Команды помощи: помощь, справка, help, что умеешь, что ты умеешь, возможности, функции
+- Команды начала работы: привет, старт, start, начать, меню, menu, здравствуй, доброе утро
+- Команды дашборда: дашборд, dashboard, ссылка на дашборд, веб-интерфейс, панель управления
+- AI помощник: ИИ помощник, AI помощник, искусственный интеллект, аналитик, AI
+- Команда обнуления: сброс баланса, reset balance, обнулить баланс
+- Общие системные запросы и приветствия
 
 ФОРМАТ ОТВЕТА - строго JSON:
 {
@@ -63,6 +85,7 @@ class UniversalAIParser:
     "project": "проект_или_null",
     "payment_method": "способ_оплаты_или_null",
     "payment_details": "детали_оплаты_или_null",
+    "payment_id": число_или_null,
     "confidence": 0.95
 }
 
@@ -116,6 +139,136 @@ class UniversalAIParser:
     "confidence": 0.95
 }
 
+"покажи последнюю операцию"
+→ {
+    "operation_type": "analytics_query",
+    "amount": null,
+    "description": "запрос последней операции",
+    "platform": null,
+    "project": null,
+    "payment_method": null,
+    "payment_details": null,
+    "payment_id": null,
+    "confidence": 0.98
+}
+
+"оплачено 123"
+→ {
+    "operation_type": "payment_confirm",
+    "amount": null,
+    "description": "подтверждение оплаты заявки 123",
+    "platform": null,
+    "project": null,
+    "payment_method": null,
+    "payment_details": null,
+    "payment_id": 123,
+    "confidence": 0.99
+}
+
+"нужна ссылка на дашборд"
+→ {
+    "operation_type": "system_command",
+    "amount": null,
+    "description": "запрос ссылки на дашборд",
+    "platform": null,
+    "project": null,
+    "payment_method": null,
+    "payment_details": null,
+    "payment_id": null,
+    "confidence": 0.95
+}
+
+"запусти ИИ помощник"
+→ {
+    "operation_type": "system_command",
+    "amount": null,
+    "description": "запрос AI помощника",
+    "platform": null,
+    "project": null,
+    "payment_method": null,
+    "payment_details": null,
+    "payment_id": null,
+    "confidence": 0.98
+}
+
+"привет! что ты умеешь?"
+→ {
+    "operation_type": "system_command",
+    "amount": null,
+    "description": "запрос возможностей системы",
+    "platform": null,
+    "project": null,
+    "payment_method": null,
+    "payment_details": null,
+    "payment_id": null,
+    "confidence": 0.96
+}
+
+"сколько человек в команде?"
+→ {
+    "operation_type": "ai_analytics",
+    "amount": null,
+    "description": "запрос количества людей в команде",
+    "platform": null,
+    "project": null,
+    "payment_method": null,
+    "payment_details": null,
+    "payment_id": null,
+    "confidence": 0.95
+}
+
+"какие платежи были на этой неделе?"
+→ {
+    "operation_type": "ai_analytics",
+    "amount": null,
+    "description": "запрос платежей за неделю",
+    "platform": null,
+    "project": null,
+    "payment_method": null,
+    "payment_details": null,
+    "payment_id": null,
+    "confidence": 0.92
+}
+
+"покажи ожидающие оплаты"
+→ {
+    "operation_type": "ai_analytics",
+    "amount": null,
+    "description": "запрос ожидающих оплат",
+    "platform": null,
+    "project": null,
+    "payment_method": null,
+    "payment_details": null,
+    "payment_id": null,
+    "confidence": 0.94
+}
+
+"какой сейчас баланс?"
+→ {
+    "operation_type": "ai_analytics",
+    "amount": null,
+    "description": "запрос текущего баланса",
+    "platform": null,
+    "project": null,
+    "payment_method": null,
+    "payment_details": null,
+    "payment_id": null,
+    "confidence": 0.96
+}
+
+"последние операции"
+→ {
+    "operation_type": "ai_analytics",
+    "amount": null,
+    "description": "запрос последних операций",
+    "platform": null,
+    "project": null,
+    "payment_method": null,
+    "payment_details": null,
+    "payment_id": null,
+    "confidence": 0.94
+}
+
 ВАЖНО: Всегда возвращай валидный JSON. Если не уверен в типе - используй "unknown" с низким confidence.
 """
     
@@ -140,7 +293,7 @@ class UniversalAIParser:
             # Добавляем контекст роли в промпт
             role_context = f"\nКонтекст: Пользователь имеет роль '{user_role}'. "
             if user_role == "manager":
-                role_context += "Может пополнять баланс, делать аналитические запросы, обнулять баланс."
+                role_context += "Может пополнять баланс, делать аналитические запросы, обнулять баланс, запрашивать дашборд, получать системные команды."
             elif user_role == "financier":
                 role_context += "Может подтверждать/отклонять оплаты, делать аналитические запросы."
             elif user_role == "marketer":
@@ -197,8 +350,8 @@ class UniversalAIParser:
         
         # Проверка типа операции
         valid_operations = [
-            "balance_add", "balance_reset", "payment_request", 
-            "analytics_query", "system_command", "unknown"
+            "balance_add", "balance_reset", "payment_request", "payment_confirm",
+            "analytics_query", "ai_analytics", "system_command", "unknown"
         ]
         if data["operation_type"] not in valid_operations:
             logger.warning(f"Неверный тип операции: {data['operation_type']}")
@@ -217,6 +370,13 @@ class UniversalAIParser:
                 logger.warning(f"Неверная сумма: {amount}")
                 return False
         
+        # Проверка payment_id для подтверждения оплаты
+        if data["operation_type"] == "payment_confirm":
+            payment_id = data.get("payment_id")
+            if payment_id is None or not isinstance(payment_id, int) or payment_id <= 0:
+                logger.warning(f"Неверный ID платежа: {payment_id}")
+                return False
+        
         return True
     
     def _normalize_parsed_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -229,6 +389,7 @@ class UniversalAIParser:
             "project": str(data.get("project", "")).strip() if data.get("project") else None,
             "payment_method": str(data.get("payment_method", "")).strip() if data.get("payment_method") else None,
             "payment_details": str(data.get("payment_details", "")).strip() if data.get("payment_details") else None,
+            "payment_id": int(data["payment_id"]) if data.get("payment_id") is not None else None,
             "confidence": float(data.get("confidence", 0))
         }
         

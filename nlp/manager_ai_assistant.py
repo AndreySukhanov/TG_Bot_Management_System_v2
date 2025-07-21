@@ -26,6 +26,7 @@ class AnalyticsData:
     projects: List[Dict]
     recent_operations: List[Dict]
     balance_history: List[Dict]
+    platforms_stats: List[Dict]
 
 
 class ManagerAIAssistant:
@@ -95,6 +96,15 @@ class ManagerAIAssistant:
                 r'как\s+менялся\s+баланс',
                 r'динамика\s+баланса',
                 r'транзакци\w+\s+истори\w*'
+            ],
+            'platforms_stats': [
+                r'статистика\s+по\s+платформам',
+                r'платформы?\s+статистика',
+                r'какие\s+платформы',
+                r'статистика\s+платформ',
+                r'распределение\s+по\s+платформам',
+                r'платформы?\s+и\s+суммы?',
+                r'анализ\s+платформ'
             ]
         }
 
@@ -167,6 +177,9 @@ class ManagerAIAssistant:
             # История баланса
             balance_history = await self._get_balance_history()
             
+            # Статистика по платформам
+            platforms_stats = await self._get_platforms_stats()
+            
             return AnalyticsData(
                 balance=balance,
                 pending_payments=pending_payments,
@@ -175,7 +188,8 @@ class ManagerAIAssistant:
                 weekly_payments=weekly_payments,
                 projects=projects,
                 recent_operations=recent_operations,
-                balance_history=balance_history
+                balance_history=balance_history,
+                platforms_stats=platforms_stats
             )
             
         except Exception as e:
@@ -256,6 +270,29 @@ class ManagerAIAssistant:
                     SELECT * FROM balance_history 
                     ORDER BY timestamp DESC 
                     LIMIT 10
+                """)
+                rows = await cursor.fetchall()
+                return [dict(row) for row in rows]
+        except:
+            return []
+
+    async def _get_platforms_stats(self) -> List[Dict]:
+        """Получение статистики по платформам"""
+        try:
+            async with aiosqlite.connect(self.config.DATABASE_PATH) as conn:
+                conn.row_factory = aiosqlite.Row
+                cursor = await conn.execute("""
+                    SELECT 
+                        platform,
+                        COUNT(*) as payment_count,
+                        SUM(amount) as total_amount,
+                        AVG(amount) as avg_amount,
+                        MAX(amount) as max_amount,
+                        MIN(amount) as min_amount
+                    FROM payments 
+                    WHERE platform IS NOT NULL AND platform != ''
+                    GROUP BY platform 
+                    ORDER BY total_amount DESC
                 """)
                 rows = await cursor.fetchall()
                 return [dict(row) for row in rows]
@@ -345,6 +382,30 @@ class ManagerAIAssistant:
                 date = datetime.fromisoformat(record['timestamp']).strftime('%d.%m %H:%M')
                 amount_str = f"+${record['amount']:.2f}" if record['amount'] > 0 else f"-${abs(record['amount']):.2f}"
                 response += f"\n• {date}: {amount_str} - {record['description']}"
+            
+            return response
+        
+        elif intent == 'platforms_stats':
+            if not data.platforms_stats:
+                return "📊 Статистика по платформам не найдена"
+            
+            response = f"📊 Статистика по платформам:\n\nВсего платформ: {len(data.platforms_stats)}\n"
+            
+            total_platforms_amount = sum(p['total_amount'] for p in data.platforms_stats)
+            total_platforms_payments = sum(p['payment_count'] for p in data.platforms_stats)
+            
+            response += f"Общая сумма: ${total_platforms_amount:.2f}\n"
+            response += f"Общее количество платежей: {total_platforms_payments}\n\n"
+            response += "Топ платформы:\n"
+            
+            for i, platform in enumerate(data.platforms_stats[:10], 1):
+                percentage = (platform['total_amount'] / total_platforms_amount * 100) if total_platforms_amount > 0 else 0
+                response += f"{i}. **{platform['platform']}**:\n"
+                response += f"   💰 Сумма: ${platform['total_amount']:.2f} ({percentage:.1f}%)\n"
+                response += f"   📊 Платежей: {platform['payment_count']}\n"
+                response += f"   📈 Средний чек: ${platform['avg_amount']:.2f}\n"
+                if i < len(data.platforms_stats):
+                    response += "\n"
             
             return response
         
